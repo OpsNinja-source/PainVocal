@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PainVocal — Interactive Prototype</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; }
+.nav { background: #fff; border-bottom: 1px solid #e5e3dc; padding: 0 1.5rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+.logo { font-weight: 700; font-size: 16px; color: #534AB7; padding: 0.9rem 1.2rem 0.9rem 0; border-right: 1px solid #e5e3dc; margin-right: 0.5rem; }
+.tab { padding: 0.9rem 1rem; font-size: 13px; cursor: pointer; color: #888780; border-bottom: 2px solid transparent; transition: all 0.15s; user-select: none; white-space: nowrap; }
+.tab:hover { color: #1a1a18; }
+.tab.active { color: #534AB7; border-bottom-color: #534AB7; font-weight: 500; }
+.live { margin-left: auto; font-size: 12px; color: #639922; font-weight: 500; display: flex; align-items: center; gap: 5px; }
+.ldot { width: 7px; height: 7px; border-radius: 50%; background: #639922; animation: blink 1.8s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+.page { display: none; padding: 1.5rem; max-width: 860px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* CARDS */
+.card { background: #fff; border: 1px solid #e5e3dc; border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; }
+.card-title { font-size: 14px; font-weight: 600; margin-bottom: 0.4rem; }
+.card-sub { font-size: 13px; color: #666; line-height: 1.6; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.stat-card { background: #fff; border: 1px solid #e5e3dc; border-radius: 12px; padding: 1rem 1.1rem; }
+.stat-n { font-size: 26px; font-weight: 700; }
+.stat-l { font-size: 12px; color: #888; margin-top: 3px; line-height: 1.4; }
+
+/* ALERTS */
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item { background: #fff; border: 1px solid #e5e3dc; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.alert-item:hover { border-color: #b0aaee; box-shadow: 0 0 0 3px #EEEDFE; }
+.alert-item.selected { border-color: #7F77DD; box-shadow: 0 0 0 3px #EEEDFE; }
+.adot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.red { background: #E24B4A; }
+.amber { background: #EF9F27; }
+.green { background: #639922; }
+.alert-text .atitle { font-size: 13px; font-weight: 600; }
+.alert-text .asub { font-size: 12px; color: #888; margin-top: 2px; }
+.alert-badge { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+.badge-red { background: #FCEBEB; color: #A32D2D; }
+.badge-amber { background: #FAEEDA; color: #854F0B; }
+.badge-green { background: #EAF3DE; color: #3B6D11; }
+
+/* DETAIL PANEL */
+.detail { background: #fff; border: 1px solid #e5e3dc; border-radius: 12px; padding: 1.2rem; margin-top: 1rem; display: none; }
+.detail.show { display: block; }
+.detail h3 { font-size: 15px; font-weight: 600; margin-bottom: 1rem; }
+.waveform-wrap { background: #f5f4f0; border-radius: 8px; padding: 0.8rem 1rem; display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+.play-btn { width: 34px; height: 34px; border-radius: 50%; background: #EEEDFE; border: none; cursor: pointer; font-size: 14px; color: #534AB7; flex-shrink: 0; }
+.play-btn:hover { background: #CECBF6; }
+.wave-canvas { flex: 1; height: 38px; position: relative; overflow: hidden; border-radius: 4px; background: #fff; border: 1px solid #e5e3dc; }
+.wave-inner { position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: center; gap: 2px; padding: 0 6px; }
+.wbar { width: 3px; border-radius: 2px; opacity: 0.7; }
+.detail-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.detail-chip { background: #f5f4f0; border-radius: 6px; padding: 6px 12px; font-size: 12px; }
+.detail-chip span { font-weight: 600; }
+.action-btn { display: block; width: 100%; padding: 10px; background: #534AB7; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 0.5rem; transition: background 0.15s; }
+.action-btn:hover { background: #3C3489; }
+.action-btn.secondary { background: #fff; color: #534AB7; border: 1px solid #7F77DD; margin-top: 8px; }
+.action-btn.secondary:hover { background: #EEEDFE; }
+
+/* ZONE MAP */
+.zone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+.zone { border-radius: 10px; padding: 1rem; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; text-align: center; }
+.zone:hover { opacity: 0.85; }
+.zone.sel { border-color: #534AB7; }
+.zone-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.zone-count { font-size: 12px; }
+.zone-status { font-size: 11px; margin-top: 4px; font-weight: 600; }
+.z-red { background: #FCEBEB; }
+.z-amber { background: #FAEEDA; }
+.z-green { background: #EAF3DE; }
+
+/* PIPELINE */
+.pipe-step { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 1.4rem; cursor: pointer; padding: 1rem; border-radius: 10px; border: 1px solid #e5e3dc; background: #fff; transition: all 0.15s; }
+.pipe-step:hover { border-color: #b0aaee; }
+.pipe-step.open { border-color: #7F77DD; background: #EEEDFE22; }
+.pipe-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.pipe-body { flex: 1; }
+.pipe-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.pipe-sub { font-size: 13px; color: #666; line-height: 1.6; display: none; margin-top: 6px; }
+.pipe-step.open .pipe-sub { display: block; }
+.pipe-arrow { font-size: 16px; color: #aaa; transition: transform 0.2s; }
+.pipe-step.open .pipe-arrow { transform: rotate(90deg); color: #534AB7; }
+
+/* SCIENCE */
+.sci-block { background: #fff; border: 1px solid #e5e3dc; border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 10px; }
+.sci-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #534AB7; }
+.sci-body { font-size: 13px; color: #555; line-height: 1.65; }
+.freq-demo { display: flex; gap: 6px; align-items: flex-end; height: 60px; margin: 10px 0; }
+.freq-bar { flex: 1; border-radius: 3px 3px 0 0; transition: height 0.4s, background 0.4s; }
+.freq-label { font-size: 10px; text-align: center; color: #aaa; margin-top: 4px; }
+.freq-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.toggle-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.sound-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #e5e3dc; background: #fff; font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+.sound-btn.active { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1a18; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 999; }
+.toast.show { opacity: 1; }
+
+h2 { font-size: 18px; font-weight: 600; margin-bottom: 0.3rem; }
+.page-sub { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #aaa; margin-bottom: 0.8rem; margin-top: 1.5rem; }
+hr { border: none; border-top: 1px solid #e5e3dc; margin: 1.5rem 0; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">PainVocal</div>
+  <div class="tab active" onclick="showPage('dashboard', this)">Dashboard</div>
+  <div class="tab" onclick="showPage('zones', this)">Zone map</div>
+  <div class="tab" onclick="showPage('science', this)">How it works</div>
+  <div class="tab" onclick="showPage('pipeline', this)">Myrias project</div>
+  <div class="live"><div class="ldot"></div>Live</div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <h2>Farm overview</h2>
+  <p class="page-sub">House 3 · Iowa · 47,000 birds · Day 28 of grow-out</p>
+
+  <div class="grid3" style="margin-bottom:1.2rem">
+    <div class="stat-card"><div class="stat-n" style="color:#639922">4</div><div class="stat-l">Zones normal</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:#EF9F27">1</div><div class="stat-l">Zone elevated stress</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:#E24B4A">1</div><div class="stat-l">Zone critical — act now</div></div>
+  </div>
+
+  <div class="section-label">Active alerts — click any to inspect</div>
+  <div class="alert-list">
+    <div class="alert-item" onclick="selectAlert('bco')" id="alert-bco">
+      <div class="adot red"></div>
+      <div class="alert-text">
+        <div class="atitle">Distress cluster detected</div>
+        <div class="asub">Zone B · 23 birds · high-frequency pain pattern · 14:32</div>
+      </div>
+      <div class="alert-badge badge-red">Critical</div>
+    </div>
+    <div class="alert-item" onclick="selectAlert('litter')" id="alert-litter">
+      <div class="adot amber"></div>
+      <div class="alert-text">
+        <div class="atitle">Elevated stress vocalisation</div>
+        <div class="asub">Zone D · 8 birds · possible litter moisture issue · 14:18</div>
+      </div>
+      <div class="alert-badge badge-amber">Watch</div>
+    </div>
+    <div class="alert-item" onclick="selectAlert('ok')" id="alert-ok">
+      <div class="adot green"></div>
+      <div class="alert-text">
+        <div class="atitle">Flock welfare normal</div>
+        <div class="asub">Zones A, C, E, F · last checked 14:30</div>
+      </div>
+      <div class="alert-badge badge-green">Normal</div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail" id="detail-bco">
+    <h3>Zone B — BCO lameness precursor detected</h3>
+    <div class="detail-row">
+      <div class="detail-chip">Confidence: <span>91%</span></div>
+      <div class="detail-chip">Birds affected: <span>~23</span></div>
+      <div class="detail-chip">Pattern: <span>BCO lameness</span></div>
+      <div class="detail-chip">First detected: <span>14:32</span></div>
+    </div>
+    <div class="waveform-wrap">
+      <button class="play-btn" onclick="togglePlay('wave-bco', this)">▶</button>
+      <div class="wave-canvas"><div class="wave-inner" id="wave-bco"></div></div>
+      <span style="font-size:11px;color:#aaa;flex-shrink:0">Zone B acoustic</span>
+    </div>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:1rem">High-frequency distress calls with sharp onset detected in Zone B. Call rate is 3.4× above baseline. Pattern matches BCO lameness precursor with 91% confidence — birds are likely experiencing leg pain. Recommend physical gait inspection within 2 hours.</p>
+    <button class="action-btn" onclick="markActioned('bco')">Mark as actioned — sending inspector to Zone B</button>
+    <button class="action-btn secondary" onclick="showToast('Alert escalated to farm manager')">Escalate to farm manager</button>
+  </div>
+
+  <div class="detail" id="detail-litter">
+    <h3>Zone D — Elevated stress vocalisation</h3>
+    <div class="detail-row">
+      <div class="detail-chip">Confidence: <span>74%</span></div>
+      <div class="detail-chip">Birds affected: <span>~8</span></div>
+      <div class="detail-chip">Pattern: <span>Moisture / discomfort</span></div>
+      <div class="detail-chip">First detected: <span>14:18</span></div>
+    </div>
+    <div class="waveform-wrap">
+      <button class="play-btn" onclick="togglePlay('wave-litter', this)">▶</button>
+      <div class="wave-canvas"><div class="wave-inner" id="wave-litter"></div></div>
+      <span style="font-size:11px;color:#aaa;flex-shrink:0">Zone D acoustic</span>
+    </div>
+    <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:1rem">Moderately elevated stress calls, lower frequency than BCO pattern. Possible causes: wet litter, feeder blockage, or temperature spike. Recommend checking litter moisture and feeder access in Zone D.</p>
+    <button class="action-btn" style="background:#BA7517" onclick="markActioned('litter')">Mark as checked — inspecting Zone D</button>
+    <button class="action-btn secondary" onclick="showToast('Monitoring frequency increased for Zone D')">Increase monitoring frequency</button>
+  </div>
+
+  <div class="detail" id="detail-ok">
+    <h3>Zones A, C, E, F — All normal</h3>
+    <div class="detail-row">
+      <div class="detail-chip">Avg call rate: <span>Normal</span></div>
+      <div class="detail-chip">Frequency profile: <span>Healthy</span></div>
+      <div class="detail-chip">Last check: <span>14:30</span></div>
+    </div>
+    <p style="font-size:13px;color:#555;line-height:1.6">Acoustic profiles across all four zones match healthy flock baseline. Low-frequency contact calls dominant, no distress patterns detected. No action required.</p>
+  </div>
+</div>
+
+<!-- ZONE MAP -->
+<div class="page" id="page-zones">
+  <h2>Zone map</h2>
+  <p class="page-sub">Click a zone to see its welfare status and acoustic profile</p>
+
+  <div class="zone-grid">
+    <div class="zone z-green sel" onclick="selectZone('A', this)">
+      <div class="zone-name">Zone A</div>
+      <div class="zone-count">~7,800 birds</div>
+      <div class="zone-status" style="color:#3B6D11">Normal</div>
+    </div>
+    <div class="zone z-red" onclick="selectZone('B', this)">
+      <div class="zone-name">Zone B</div>
+      <div class="zone-count">~8,100 birds</div>
+      <div class="zone-status" style="color:#A32D2D">Critical</div>
+    </div>
+    <div class="zone z-green" onclick="selectZone('C', this)">
+      <div class="zone-name">Zone C</div>
+      <div class="zone-count">~7,600 birds</div>
+      <div class="zone-status" style="color:#3B6D11">Normal</div>
+    </div>
+    <div class="zone z-amber" onclick="selectZone('D', this)">
+      <div class="zone-name">Zone D</div>
+      <div class="zone-count">~8,300 birds</div>
+      <div class="zone-status" style="color:#854F0B">Watch</div>
+    </div>
+    <div class="zone z-green" onclick="selectZone('E', this)">
+      <div class="zone-name">Zone E</div>
+      <div class="zone-count">~7,900 birds</div>
+      <div class="zone-status" style="color:#3B6D11">Normal</div>
+    </div>
+    <div class="zone z-green" onclick="selectZone('F', this)">
+      <div class="zone-name">Zone F</div>
+      <div class="zone-count">~7,300 birds</div>
+      <div class="zone-status" style="color:#3B6D11">Normal</div>
+    </div>
+  </div>
+
+  <div class="card" id="zone-detail">
+    <div class="card-title" id="zone-detail-title">Zone A — Normal</div>
+    <div class="card-sub" id="zone-detail-body">Acoustic profile matches healthy flock baseline. Dominant calls are low-frequency contact calls. Call rate within normal range. No intervention needed.</div>
+  </div>
+</div>
+
+<!-- SCIENCE -->
+<div class="page" id="page-science">
+  <h2>How acoustic pain detection works</h2>
+  <p class="page-sub">Click each sound type to see its frequency profile</p>
+
+  <div class="toggle-row">
+    <button class="sound-btn active" onclick="setSound('healthy', this)">Healthy flock</button>
+    <button class="sound-btn" onclick="setSound('stress', this)">Stress / discomfort</button>
+    <button class="sound-btn" onclick="setSound('pain', this)">BCO pain calls</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title" id="sci-sound-title">Healthy flock — low frequency, rhythmic</div>
+    <div style="display:flex;gap:4px;align-items:flex-end;height:70px;margin:12px 0 4px" id="freq-bars"></div>
+    <div style="display:flex;gap:4px" id="freq-labels"></div>
+    <div class="card-sub" id="sci-sound-desc" style="margin-top:10px">A healthy flock produces a constant low murmur — contact calls, feeding sounds, and gentle clucking. The acoustic profile is dominated by low frequencies (200–800 Hz) and is rhythmic and predictable.</div>
+  </div>
+
+  <div class="sci-block">
+    <div class="sci-title">Why vocalisation reveals pain</div>
+    <div class="sci-body">Chickens have over 30 distinct call types. When experiencing pain, birds produce higher-pitched calls with sharper onset and faster call rate. In BCO lameness specifically, distress calls emerge <strong>2–3 days before visible gait problems</strong> — giving farmers an intervention window that visual inspection completely misses.</div>
+  </div>
+
+  <div class="sci-block">
+    <div class="sci-title">The classifier pipeline</div>
+    <div class="sci-body">Raw audio → noise filtering → mel-spectrogram (converts sound to an image of frequencies over time) → CNN image classifier → flock-level aggregator → alert. The spectrogram step is key: it turns a hard audio problem into an image classification problem that modern AI handles well.</div>
+  </div>
+
+  <div class="sci-block">
+    <div class="sci-title">The bottleneck (and why Myrias can fix it)</div>
+    <div class="sci-body">The science is established. Published studies show &gt;85% classification accuracy in controlled settings. The gap is a labeled training dataset from real commercial barns — requiring producer partnerships and veterinary confirmation. This is exactly the "valley of death" between proof-of-concept and deployment that the Myrias/Innovate Animal Ag model is designed to bridge.</div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div class="page" id="page-pipeline">
+  <h2>PainVocal as a Myrias project</h2>
+  <p class="page-sub">Click each stage to expand — modelled on the Innovate Animal Ag DARPA approach</p>
+
+  <div onclick="togglePipe('p1')" class="pipe-step open" id="p1">
+    <div class="pipe-num" style="background:#EEEDFE;color:#3C3489">1</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Research validation — 0 to 6 months</div>
+      <div class="pipe-sub">Partner with a poultry science lab (University of Arkansas already works with Innovate Animal Ag) to collect labeled audio from BCO lameness, respiratory disease, and healthy flocks. Fine-tune a lightweight mel-spectrogram CNN classifier. Establish baseline accuracy benchmarks. Budget: ~$80–120K — comparable to typical Innovate Animal Ag research grants.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+  </div>
+
+  <div onclick="togglePipe('p2')" class="pipe-step" id="p2">
+    <div class="pipe-num" style="background:#EEEDFE;color:#3C3489">2</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Commercial trial — 6 to 18 months</div>
+      <div class="pipe-sub">Deploy prototype sensor arrays in 3–5 barns with an early-adopter producer (NestFresh-style partner — already demonstrated appetite for welfare innovation with in-ovo sexing). Measure alert-to-intervention lag, false positive rate, and correlation with mortality outcomes. Build the ROI case: if detecting BCO early prevents even 10% more pre-slaughter deaths, the system pays for itself.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+  </div>
+
+  <div onclick="togglePipe('p3')" class="pipe-step" id="p3">
+    <div class="pipe-num" style="background:#E1F5EE;color:#085041">3</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Certification integration — 12 to 24 months</div>
+      <div class="pipe-sub">Build welfare data log export for third-party audit bodies. Pitch to Better Chicken Commitment signatories as low-cost compliance infrastructure — giving retailers a credible welfare story without the cost of pastoral housing. This cracks the collective action logjam: companies that were rationalising non-compliance suddenly have an affordable alternative.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+  </div>
+
+  <div onclick="togglePipe('p4')" class="pipe-step" id="p4">
+    <div class="pipe-num" style="background:#F1EFE8;color:#444441">4</div>
+    <div class="pipe-body">
+      <div class="pipe-title">Scale and spin-out — 24 months plus</div>
+      <div class="pipe-sub">License the classifier to existing barn tech companies, or spin out as a standalone Myrias portfolio company (for-profit or nonprofit depending on what the problem needs). Expand species coverage to pigs and turkeys — same core technology, massive additional scale. Pork industry pre-slaughter mortality is ~10% with almost no acoustic monitoring in place.</div>
+    </div>
+    <div class="pipe-arrow">›</div>
+  </div>
+
+  <hr>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title" style="color:#0F6E56">For-profit path</div>
+      <div class="card-sub">SaaS subscription per barn. Revenue sustains the company and scales distribution. Farmers pay because the ROI is real — fewer dead birds means recovered revenue.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#3C3489">Nonprofit path</div>
+      <div class="card-sub">Open-source classifier plus grant-funded deployment for maximum coverage speed. Pairs with philanthropic capital from foundations already funding animal welfare tech.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <div class="card-title">Hybrid (most likely fit for Myrias)</div>
+    <div class="card-sub">Open-source the classifier — lowering the barrier to adoption industry-wide. Commercial dashboard and support layer generates revenue. Mirrors how Innovate Animal Ag operates: nonprofit mission, pragmatic about for-profit tools where they accelerate impact.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// NAV
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ALERTS
+function selectAlert(id) {
+  document.querySelectorAll('.alert-item').forEach(a => a.classList.remove('selected'));
+  document.querySelectorAll('.detail').forEach(d => d.classList.remove('show'));
+  document.getElementById('alert-' + id).classList.add('selected');
+  document.getElementById('detail-' + id).classList.add('show');
+}
+
+function markActioned(id) {
+  document.getElementById('alert-' + id).querySelector('.adot').className = 'adot green';
+  document.getElementById('alert-' + id).querySelector('.alert-badge').className = 'alert-badge badge-green';
+  document.getElementById('alert-' + id).querySelector('.alert-badge').textContent = 'Actioned';
+  document.getElementById('detail-' + id).classList.remove('show');
+  document.getElementById('alert-' + id).classList.remove('selected');
+  showToast('Inspector dispatched — alert marked as actioned');
+}
+
+// ZONES
+const zoneData = {
+  A: { title: 'Zone A — Normal', body: 'Acoustic profile matches healthy flock baseline. Dominant calls are low-frequency contact calls. Call rate within normal range. No intervention needed.' },
+  B: { title: 'Zone B — Critical: BCO lameness precursor', body: 'High-frequency distress calls detected at 3.4× baseline rate. Pattern matches BCO lameness with 91% confidence. Recommend immediate gait inspection. Birds are likely experiencing leg pain 2–3 days before visible symptoms would appear.' },
+  C: { title: 'Zone C — Normal', body: 'Healthy acoustic profile. Mix of contact calls and feeding sounds. No distress patterns detected in the past 6 hours.' },
+  D: { title: 'Zone D — Watch: elevated stress', body: 'Moderately elevated stress vocalisation detected in ~8 birds. Possible litter moisture issue or feeder blockage. Recommend checking Zone D conditions. Confidence: 74%.' },
+  E: { title: 'Zone E — Normal', body: 'Normal acoustic baseline. Call rate and frequency profile within expected range for Day 28 birds.' },
+  F: { title: 'Zone F — Normal', body: 'Normal. Slightly below average call rate, consistent with lower stocking density in this zone.' }
+};
+
+function selectZone(z, el) {
+  document.querySelectorAll('.zone').forEach(z => z.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('zone-detail-title').textContent = zoneData[z].title;
+  document.getElementById('zone-detail-body').textContent = zoneData[z].body;
+}
+
+// SCIENCE / FREQ BARS
+const soundData = {
+  healthy: {
+    title: 'Healthy flock — low frequency, rhythmic',
+    desc: 'A healthy flock produces a constant low murmur — contact calls, feeding sounds, and gentle clucking. The acoustic profile is dominated by low frequencies (200–800 Hz) and is rhythmic and predictable.',
+    heights: [70, 85, 90, 75, 55, 35, 20, 12, 8, 6],
+    color: '#1D9E75'
+  },
+  stress: {
+    title: 'Stress / discomfort — elevated mid-range',
+    desc: 'Stress calls shift energy into the mid-frequency range (800–2000 Hz). Call rate increases and rhythm becomes less regular. Common causes: temperature, litter moisture, feeder access, crowding.',
+    heights: [40, 55, 75, 85, 80, 60, 40, 22, 12, 8],
+    color: '#EF9F27'
+  },
+  pain: {
+    title: 'BCO pain calls — high frequency, sharp onset',
+    desc: 'Pain calls from BCO lameness push energy into high frequencies (2000–5000 Hz). Call onset is sharp and sudden. Call rate is 3–5× above baseline. These patterns appear 2–3 days before visual gait problems — giving farmers a critical intervention window.',
+    heights: [15, 20, 30, 45, 60, 78, 88, 92, 85, 70],
+    color: '#E24B4A'
+  }
+};
+const freqBands = ['200', '400', '800', '1.2k', '1.6k', '2k', '2.8k', '3.5k', '4.2k', '5k'];
+
+function renderFreq(type) {
+  const d = soundData[type];
+  const bars = document.getElementById('freq-bars');
+  const labels = document.getElementById('freq-labels');
+  bars.innerHTML = '';
+  labels.innerHTML = '';
+  d.heights.forEach((h, i) => {
+    const w = document.createElement('div');
+    w.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;';
+    const b = document.createElement('div');
+    b.style.cssText = 'width:100%;border-radius:3px 3px 0 0;transition:height 0.4s,background 0.4s;';
+    b.style.height = h + '%';
+    b.style.background = d.color;
+    b.style.opacity = '0.8';
+    const l = document.createElement('div');
+    l.style.cssText = 'font-size:9px;color:#aaa;margin-top:3px;text-align:center;';
+    l.textContent = freqBands[i];
+    w.appendChild(b);
+    bars.appendChild(b);
+    labels.appendChild(l);
+  });
+  // rebuild bars inside flex container
+  bars.innerHTML = '';
+  labels.innerHTML = '';
+  d.heights.forEach((h, i) => {
+    const b = document.createElement('div');
+    b.style.cssText = `flex:1;border-radius:3px 3px 0 0;transition:height 0.4s,background 0.4s;height:${h}%;background:${d.color};opacity:0.8;`;
+    bars.appendChild(b);
+    const l = document.createElement('div');
+    l.style.cssText = 'flex:1;font-size:9px;color:#aaa;text-align:center;';
+    l.textContent = freqBands[i];
+    labels.appendChild(l);
+  });
+  document.getElementById('sci-sound-title').textContent = d.title;
+  document.getElementById('sci-sound-desc').textContent = d.desc;
+}
+
+function setSound(type, el) {
+  document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderFreq(type);
+}
+
+renderFreq('healthy');
+
+// PIPELINE
+function togglePipe(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+// WAVEFORM
+function buildWave(id, color) {
+  const el = document.getElementById(id);
+  if (el.children.length > 0) return;
+  for (let i = 0; i < 80; i++) {
+    const b = document.createElement('div');
+    b.className = 'wbar';
+    b.style.width = '3px';
+    b.style.borderRadius = '2px';
+    b.style.background = color || '#7F77DD';
+    b.style.height = (4 + Math.abs(Math.sin(i * 0.45) * 18 + Math.sin(i * 0.9) * 9)) + 'px';
+    el.appendChild(b);
+  }
+}
+
+const playing = {};
+function togglePlay(waveId, btn) {
+  buildWave(waveId, waveId === 'wave-bco' ? '#E24B4A' : '#EF9F27');
+  if (playing[waveId]) {
+    cancelAnimationFrame(playing[waveId].id);
+    playing[waveId] = null;
+    btn.textContent = '▶';
+  } else {
+    let offset = 0;
+    const el = document.getElementById(waveId);
+    function step() {
+      offset = (offset + 0.6) % 100;
+      el.style.transform = 'translateX(-' + offset + 'px)';
+      playing[waveId].id = requestAnimationFrame(step);
+    }
+    playing[waveId] = { id: null };
+    step();
+    btn.textContent = '⏸';
+  }
+}
+
+// TOAST
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Simulate new alert after 8s
+setTimeout(() => {
+  showToast('New alert: Zone C — temperature spike detected');
+}, 8000);
+</script>
+</body>
+</html>
